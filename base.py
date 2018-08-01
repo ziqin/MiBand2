@@ -3,7 +3,7 @@ import time
 import logging
 from datetime import datetime
 from Crypto.Cipher import AES
-from Queue import Queue, Empty
+from queue import Queue, Empty
 from bluepy.btle import Peripheral, DefaultDelegate, ADDR_TYPE_RANDOM, BTLEException
 
 
@@ -44,7 +44,7 @@ class AuthenticationDelegate(DefaultDelegate):
             self.device.queue.put((QUEUE_TYPES.HEART, data))
         elif hnd == 0x38:
             # Not sure about this, need test
-            if len(data) == 20 and struct.unpack('b', data[0])[0] == 1:
+            if len(data) == 20 and struct.unpack('b', data[0:1])[0] == 1:
                 self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data))
             elif len(data) == 16:
                 self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
@@ -134,7 +134,7 @@ class MiBand2(Peripheral):
 
     def _parse_raw_accel(self, bytes):
         res = []
-        for i in xrange(3):
+        for i in range(3):
             g = struct.unpack('hhh', bytes[2 + i * 6:8 + i * 6])
             res.append({'x': g[0], 'y': g[1], 'wtf': g[2]})
         # WTF
@@ -151,27 +151,27 @@ class MiBand2(Peripheral):
 
     def _parse_date(self, bytes):
         year = struct.unpack('h', bytes[0:2])[0] if len(bytes) >= 2 else None
-        month = struct.unpack('b', bytes[2])[0] if len(bytes) >= 3 else None
-        day = struct.unpack('b', bytes[3])[0] if len(bytes) >= 4 else None
-        hours = struct.unpack('b', bytes[4])[0] if len(bytes) >= 5 else None
-        minutes = struct.unpack('b', bytes[5])[0] if len(bytes) >= 6 else None
-        seconds = struct.unpack('b', bytes[6])[0] if len(bytes) >= 7 else None
-        day_of_week = struct.unpack('b', bytes[7])[0] if len(bytes) >= 8 else None
-        fractions256 = struct.unpack('b', bytes[8])[0] if len(bytes) >= 9 else None
+        month = struct.unpack('b', bytes[2:3])[0] if len(bytes) >= 3 else None
+        day = struct.unpack('b', bytes[3:4])[0] if len(bytes) >= 4 else None
+        hours = struct.unpack('b', bytes[4:5])[0] if len(bytes) >= 5 else None
+        minutes = struct.unpack('b', bytes[5:6])[0] if len(bytes) >= 6 else None
+        seconds = struct.unpack('b', bytes[6:7])[0] if len(bytes) >= 7 else None
+        day_of_week = struct.unpack('b', bytes[7:8])[0] if len(bytes) >= 8 else None
+        fractions256 = struct.unpack('b', bytes[8:9])[0] if len(bytes) >= 9 else None
 
         return {"date": datetime(*(year, month, day, hours, minutes, seconds)), "day_of_week": day_of_week, "fractions256": fractions256}
 
     def _parse_battery_response(self, bytes):
-        level = struct.unpack('b', bytes[1])[0] if len(bytes) >= 2 else None
-        last_level = struct.unpack('b', bytes[19])[0] if len(bytes) >= 20 else None
-        status = 'normal' if struct.unpack('b', bytes[2])[0] == 0 else "charging"
+        level = struct.unpack('b', bytes[1:2])[0] if len(bytes) >= 2 else None
+        last_level = struct.unpack('b', bytes[19:20])[0] if len(bytes) >= 20 else None
+        status = 'normal' if struct.unpack('b', bytes[2:3])[0] == 0 else "charging"
         datetime_last_charge = self._parse_date(bytes[11:18])
         datetime_last_off = self._parse_date(bytes[3:10])
 
         # WTF?
-        # struct.unpack('b', bytes[10])
-        # struct.unpack('b', bytes[18])
-        # print struct.unpack('b', bytes[10]), struct.unpack('b', bytes[18])
+        # struct.unpack('b', bytes[10:11])
+        # struct.unpack('b', bytes[18:19])
+        # print struct.unpack('b', bytes[10:11]), struct.unpack('b', bytes[18:19])
 
         res = {
             "status": status,
@@ -297,7 +297,7 @@ class MiBand2(Peripheral):
         meters = struct.unpack('h', a[5:7])[0] if len(a) >= 7 else None
         fat_gramms = struct.unpack('h', a[2:4])[0] if len(a) >= 4 else None
         # why only 1 byte??
-        callories = struct.unpack('b', a[9])[0] if len(a) >= 10 else None
+        callories = struct.unpack('b', a[9:10])[0] if len(a) >= 10 else None
         return {
             "steps": steps,
             "meters": meters,
